@@ -1,26 +1,168 @@
 @import "tailwindcss";
 
+/* =========================================
+   CourseFlow — Design System Tokens
+   Material Design 3 color scheme (light/dark)
+   ========================================= */
+
+@theme {
+  /* ---------- Colors ---------- */
+  --color-primary: #004ac6;
+  --color-on-primary: #ffffff;
+  --color-primary-container: #2563eb;
+  --color-on-primary-container: #eeefff;
+  --color-primary-fixed: #dbe1ff;
+  --color-primary-fixed-dim: #b4c5ff;
+  --color-on-primary-fixed: #00174b;
+  --color-on-primary-fixed-variant: #003ea8;
+  --color-inverse-primary: #b4c5ff;
+
+  --color-secondary: #4e45d5;
+  --color-on-secondary: #ffffff;
+  --color-secondary-container: #6860ef;
+  --color-on-secondary-container: #fffbff;
+  --color-secondary-fixed: #e3dfff;
+  --color-secondary-fixed-dim: #c3c0ff;
+  --color-on-secondary-fixed: #100069;
+  --color-on-secondary-fixed-variant: #372abf;
+
+  --color-tertiary: #006056;
+  --color-on-tertiary: #ffffff;
+  --color-tertiary-container: #007b6e;
+  --color-on-tertiary-container: #b1fff1;
+  --color-tertiary-fixed: #71f8e4;
+  --color-tertiary-fixed-dim: #4fdbc8;
+  --color-on-tertiary-fixed: #00201c;
+  --color-on-tertiary-fixed-variant: #005048;
+
+  --color-error: #ba1a1a;
+  --color-on-error: #ffffff;
+  --color-error-container: #ffdad6;
+  --color-on-error-container: #93000a;
+
+  --color-background: #faf8ff;
+  --color-on-background: #191b23;
+  --color-surface: #faf8ff;
+  --color-on-surface: #191b23;
+  --color-surface-variant: #e1e2ed;
+  --color-on-surface-variant: #434655;
+  --color-surface-dim: #d9d9e5;
+  --color-surface-bright: #faf8ff;
+  --color-surface-tint: #0053db;
+  --color-surface-container-lowest: #ffffff;
+  --color-surface-container-low: #f3f3fe;
+  --color-surface-container: #ededf9;
+  --color-surface-container-high: #e7e7f3;
+  --color-surface-container-highest: #e1e2ed;
+
+  --color-outline: #737686;
+  --color-outline-variant: #c3c6d7;
+  --color-inverse-surface: #2e3039;
+  --color-inverse-on-surface: #f0f0fb;
+
+  /* ---------- Spacing ---------- */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
+  --spacing-2xl: 48px;
+  --spacing-3xl: 64px;
+  --spacing-gutter: 24px;
+  --spacing-sidebar_width: 280px;
+  --spacing-container_max: 1440px;
+
+  /* ---------- Border Radius ---------- */
+  --radius: 4px;
+  --radius-lg: 8px;
+  --radius-xl: 12px;
+  --radius-full: 9999px;
+}
+
+/* Font family — defined outside @theme so var(--font-inter) resolves at runtime */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --font-sans: var(--font-inter), "Inter", ui-sans-serif, system-ui, sans-serif;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+/* =========================================
+   Dark Mode Token Overrides
+   ========================================= */
+.dark {
+  --color-primary: #b4c5ff;
+  --color-on-primary: #002987;
+  --color-primary-container: #003ea8;
+  --color-on-primary-container: #dbe1ff;
+  --color-primary-fixed: #dbe1ff;
+  --color-primary-fixed-dim: #b4c5ff;
+
+  --color-secondary: #c3c0ff;
+  --color-on-secondary: #1e1578;
+  --color-secondary-container: #372abf;
+  --color-on-secondary-container: #e3dfff;
+
+  --color-tertiary: #4fdbc8;
+  --color-on-tertiary: #003731;
+  --color-tertiary-container: #005048;
+  --color-on-tertiary-container: #71f8e4;
+
+  --color-error: #ffb4ab;
+  --color-on-error: #690005;
+  --color-error-container: #93000a;
+  --color-on-error-container: #ffdad6;
+
+  --color-background: #111318;
+  --color-on-background: #e2e2ed;
+  --color-surface: #111318;
+  --color-on-surface: #e2e2ed;
+  --color-surface-variant: #434655;
+  --color-on-surface-variant: #c3c6d7;
+  --color-surface-dim: #111318;
+  --color-surface-bright: #37393f;
+  --color-surface-container-lowest: #0c0e13;
+  --color-surface-container-low: #191b23;
+  --color-surface-container: #1d1f27;
+  --color-surface-container-high: #282a31;
+  --color-surface-container-highest: #32343c;
+
+  --color-outline: #8d909e;
+  --color-outline-variant: #434655;
+  --color-inverse-surface: #e2e2ed;
+  --color-inverse-on-surface: #2e3039;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* =========================================
+   Base Styles
+   ========================================= */
+* {
+  box-sizing: border-box;
+}
+
+html {
+  font-family: var(--font-sans);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans);
+  background-color: var(--color-background);
+  color: var(--color-on-surface);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.material-symbols-outlined {
+  font-variation-settings: "FILL" 0, "wght" 400, "GRAD" 0, "opsz" 24;
+  vertical-align: middle;
+}
+
+/* =========================================
+   Utility Classes (design-system helpers)
+   ========================================= */
+.card-shadow {
+  box-shadow: 0px 1px 3px rgba(15, 23, 42, 0.05),
+    0px 4px 6px rgba(15, 23, 42, 0.05);
+}
+
+.card-shadow-md {
+  box-shadow: 0px 4px 6px -1px rgba(15, 23, 42, 0.1),
+    0px 2px 4px -2px rgba(15, 23, 42, 0.1);
 }
