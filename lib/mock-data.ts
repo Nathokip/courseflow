@@ -47,7 +47,7 @@ export const mockStudent: Student = {
   email: "alex.johnson@university.edu",
   studentId: "STU-2024-001",
   semester: "Spring 2025",
-  avatarUrl: "https://lh3.googleusercontent.com/aida-public/AB6AXuBqxmkjWjxLc49aNJYtmynJQXsz8OvJUeRu8TWUiuw6Uy2Ho73Bro1tTb0GnUqcsWZxMjCKEzyoW4JxJ_4wfojI2R4WTNfJA4qJ9hwiW085JlBpSp8pA8HNjF-kvxV9p2IJcpLbYjuc47DWm2NSRIwQp41dJId79wNEruvsQOc55Q5Y9T5D0UI0RQMqITWKRy5cHqXeryqdUEWAjJSTzqAXxn2i-b8fpzQ4r2dFu698LmNxXetGl9Wm2A",
+  avatarUrl: "",
   registeredCredits: 14,
   maxCredits: 18,
   creditLimit: 18,

@@ -5,22 +5,50 @@ import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
-export default function LoginPage() {
+export default function SignupPage() {
   const router = useRouter();
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [studentId, setStudentId] = useState("");
   const [password, setPassword] = useState("");
-  const [remember, setRemember] = useState(false);
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
-    if (!email || !password) {
-      setError("Please enter your email and password.");
+
+    if (!name || !email || !studentId || !password || !confirmPassword) {
+      setError("Please fill in all fields.");
       return;
     }
+
+    if (password !== confirmPassword) {
+      setError("Passwords do not match.");
+      return;
+    }
+
+    if (password.length < 6) {
+      setError("Password must be at least 6 characters.");
+      return;
+    }
+
     setLoading(true);
+
+    const res = await fetch("/api/auth/signup", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, email, studentId, password }),
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      setError(data.error);
+      setLoading(false);
+      return;
+    }
 
     const result = await signIn("credentials", {
       email,
@@ -29,8 +57,9 @@ export default function LoginPage() {
     });
 
     setLoading(false);
+
     if (result?.error) {
-      setError("Invalid email or password.");
+      router.push("/login");
     } else {
       router.push("/dashboard");
     }
@@ -73,17 +102,50 @@ export default function LoginPage() {
               className="text-3xl font-bold mb-2"
               style={{ color: "var(--color-on-surface)" }}
             >
-              Welcome back
+              Create your account
             </h2>
             <p
               className="text-base"
               style={{ color: "var(--color-on-surface-variant)" }}
             >
-              Please enter your academic credentials to access the portal.
+              Sign up to get started with CourseFlow.
             </p>
           </div>
 
-          <form className="space-y-5" onSubmit={handleSubmit}>
+          <form className="space-y-4" onSubmit={handleSubmit}>
+            <div className="flex flex-col gap-1">
+              <label
+                className="text-sm font-medium"
+                htmlFor="name"
+                style={{ color: "var(--color-on-surface)" }}
+              >
+                Full Name
+              </label>
+              <input
+                id="name"
+                type="text"
+                placeholder="Alex Johnson"
+                required
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="w-full rounded-xl px-4 py-3 text-sm border outline-none transition-all"
+                style={{
+                  backgroundColor: "var(--color-surface-container-lowest)",
+                  borderColor: "var(--color-outline-variant)",
+                  color: "var(--color-on-surface)",
+                }}
+                onFocus={(e) => {
+                  e.target.style.borderColor = "var(--color-primary)";
+                  e.target.style.boxShadow =
+                    "0 0 0 2px color-mix(in srgb, var(--color-primary) 20%, transparent)";
+                }}
+                onBlur={(e) => {
+                  e.target.style.borderColor = "var(--color-outline-variant)";
+                  e.target.style.boxShadow = "none";
+                }}
+              />
+            </div>
+
             <div className="flex flex-col gap-1">
               <label
                 className="text-sm font-medium"
@@ -119,23 +181,49 @@ export default function LoginPage() {
 
             <div className="flex flex-col gap-1">
               <label
-                className="text-sm font-medium flex justify-between"
+                className="text-sm font-medium"
+                htmlFor="studentId"
+                style={{ color: "var(--color-on-surface)" }}
+              >
+                Student ID
+              </label>
+              <input
+                id="studentId"
+                type="text"
+                placeholder="e.g. STU-2025-001"
+                required
+                value={studentId}
+                onChange={(e) => setStudentId(e.target.value)}
+                className="w-full rounded-xl px-4 py-3 text-sm border outline-none transition-all"
+                style={{
+                  backgroundColor: "var(--color-surface-container-lowest)",
+                  borderColor: "var(--color-outline-variant)",
+                  color: "var(--color-on-surface)",
+                }}
+                onFocus={(e) => {
+                  e.target.style.borderColor = "var(--color-primary)";
+                  e.target.style.boxShadow =
+                    "0 0 0 2px color-mix(in srgb, var(--color-primary) 20%, transparent)";
+                }}
+                onBlur={(e) => {
+                  e.target.style.borderColor = "var(--color-outline-variant)";
+                  e.target.style.boxShadow = "none";
+                }}
+              />
+            </div>
+
+            <div className="flex flex-col gap-1">
+              <label
+                className="text-sm font-medium"
                 htmlFor="password"
                 style={{ color: "var(--color-on-surface)" }}
               >
                 Password
-                <a
-                  href="#"
-                  className="text-sm font-medium transition-colors"
-                  style={{ color: "var(--color-primary)" }}
-                >
-                  Forgot password?
-                </a>
               </label>
               <input
                 id="password"
                 type="password"
-                placeholder="••••••••"
+                placeholder="At least 6 characters"
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -157,22 +245,37 @@ export default function LoginPage() {
               />
             </div>
 
-            <div className="flex items-center gap-2">
-              <input
-                id="remember"
-                type="checkbox"
-                checked={remember}
-                onChange={(e) => setRemember(e.target.checked)}
-                className="rounded"
-                style={{ accentColor: "var(--color-primary)" }}
-              />
+            <div className="flex flex-col gap-1">
               <label
-                htmlFor="remember"
-                className="text-sm"
-                style={{ color: "var(--color-on-surface-variant)" }}
+                className="text-sm font-medium"
+                htmlFor="confirmPassword"
+                style={{ color: "var(--color-on-surface)" }}
               >
-                Remember me for 30 days
+                Confirm Password
               </label>
+              <input
+                id="confirmPassword"
+                type="password"
+                placeholder="Re-enter your password"
+                required
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                className="w-full rounded-xl px-4 py-3 text-sm border outline-none transition-all"
+                style={{
+                  backgroundColor: "var(--color-surface-container-lowest)",
+                  borderColor: "var(--color-outline-variant)",
+                  color: "var(--color-on-surface)",
+                }}
+                onFocus={(e) => {
+                  e.target.style.borderColor = "var(--color-primary)";
+                  e.target.style.boxShadow =
+                    "0 0 0 2px color-mix(in srgb, var(--color-primary) 20%, transparent)";
+                }}
+                onBlur={(e) => {
+                  e.target.style.borderColor = "var(--color-outline-variant)";
+                  e.target.style.boxShadow = "none";
+                }}
+              />
             </div>
 
             {error && (
@@ -200,7 +303,7 @@ export default function LoginPage() {
                 (e.currentTarget as HTMLButtonElement).style.opacity = "1";
               }}
             >
-              {loading ? "Signing in\u2026" : "Login"}
+              {loading ? "Creating account\u2026" : "Create account"}
             </button>
           </form>
 
@@ -208,24 +311,15 @@ export default function LoginPage() {
             className="mt-6 text-sm text-center"
             style={{ color: "var(--color-on-surface-variant)" }}
           >
-            Don&apos;t have an account?{" "}
+            Already have an account?{" "}
             <Link
-              href="/signup"
+              href="/login"
               className="font-medium transition-colors"
               style={{ color: "var(--color-primary)" }}
             >
-              Sign up
+              Log in
             </Link>
           </p>
-
-          <div className="mt-8 text-center">
-            <p
-              className="text-sm"
-              style={{ color: "var(--color-on-surface-variant)" }}
-            >
-              Demo: alex.johnson@university.edu / password123
-            </p>
-          </div>
         </section>
 
         <section
@@ -245,37 +339,41 @@ export default function LoginPage() {
                   fontSize: "80px",
                 }}
               >
-                school
+                person_add
               </span>
             </div>
             <h3
               className="text-2xl font-bold mb-3"
               style={{ color: "var(--color-on-surface)" }}
             >
-              Your Academic Portal
+              Join CourseFlow
             </h3>
             <p
               className="text-base mx-auto"
               style={{ color: "var(--color-on-surface-variant)" }}
             >
-              Manage your courses, track credits, and stay on top of your
-              academic journey.
+              Register for courses, track your credits, and manage your academic
+              journey all in one place.
             </p>
             <div className="flex justify-center gap-4 mt-8">
-              {["book", "calendar_month", "grade", "groups"].map((icon) => (
-                <div
-                  key={icon}
-                  className="w-12 h-12 rounded-xl flex items-center justify-center"
-                  style={{ backgroundColor: "var(--color-surface-container-lowest)" }}
-                >
-                  <span
-                    className="material-symbols-outlined text-[24px]"
-                    style={{ color: "var(--color-primary)" }}
+              {["edit_note", "assignment", "trending_up", "celebration"].map(
+                (icon) => (
+                  <div
+                    key={icon}
+                    className="w-12 h-12 rounded-xl flex items-center justify-center"
+                    style={{
+                      backgroundColor: "var(--color-surface-container-lowest)",
+                    }}
                   >
-                    {icon}
-                  </span>
-                </div>
-              ))}
+                    <span
+                      className="material-symbols-outlined text-[24px]"
+                      style={{ color: "var(--color-primary)" }}
+                    >
+                      {icon}
+                    </span>
+                  </div>
+                )
+              )}
             </div>
           </div>
           <div

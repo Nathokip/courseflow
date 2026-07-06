@@ -110,16 +110,20 @@ export default function TopBar({ title, showSearch = true }: TopBarProps) {
 
         {/* Avatar */}
         <div
-          className="w-9 h-9 rounded-full overflow-hidden border cursor-pointer ml-1"
-          style={{ borderColor: "var(--color-outline-variant)" }}
+          className="w-9 h-9 rounded-full overflow-hidden border cursor-pointer ml-1 flex items-center justify-center text-sm font-semibold"
+          style={{ borderColor: "var(--color-outline-variant)", backgroundColor: "var(--color-primary-container)", color: "var(--color-on-primary-container)" }}
         >
-          <Image
-            src={mockStudent.avatarUrl}
-            alt="Student Avatar"
-            width={36}
-            height={36}
-            className="w-full h-full object-cover"
-          />
+          {mockStudent.avatarUrl ? (
+            <Image
+              src={mockStudent.avatarUrl}
+              alt="Student Avatar"
+              width={36}
+              height={36}
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            mockStudent.name.charAt(0).toUpperCase()
+          )}
         </div>
       </div>
     </header>
