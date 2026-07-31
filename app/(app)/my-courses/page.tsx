@@ -29,7 +29,9 @@ const colorMap: Record<string, { bg: string; text: string }> = {
 export default function MyCoursesPage() {
   const [courses, setCourses] = useState<Course[]>([]);
   const [creditLimit, setCreditLimit] = useState(18);
+  const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
+  const normalizedSearch = search.trim().toLowerCase();
 
   useEffect(() => {
     async function fetchData() {
@@ -52,10 +54,25 @@ export default function MyCoursesPage() {
   }, []);
 
   const totalCredits = courses.reduce((s, c) => s + c.credits, 0);
+  const filteredCourses = courses.filter(
+    (course) =>
+      !normalizedSearch ||
+      course.code.toLowerCase().includes(normalizedSearch) ||
+      course.name.toLowerCase().includes(normalizedSearch) ||
+      course.instructor.toLowerCase().includes(normalizedSearch) ||
+      course.department.toLowerCase().includes(normalizedSearch) ||
+      course.schedule.toLowerCase().includes(normalizedSearch) ||
+      (course.registeredOn ?? "").toLowerCase().includes(normalizedSearch)
+  );
 
   return (
     <>
-      <TopBar title="My Courses" />
+      <TopBar
+        title="My Courses"
+        searchValue={search}
+        onSearchChange={setSearch}
+        searchPlaceholder="Search my courses..."
+      />
       <main className="flex-1 p-6 md:p-8 mx-auto w-full" style={{ maxWidth: "var(--spacing-container_max)" }}>
         <div className="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-4">
           <div>
@@ -79,9 +96,15 @@ export default function MyCoursesPage() {
             <p className="text-lg font-medium">No courses registered yet.</p>
             <p className="text-sm mt-1">Head to Register Courses to get started.</p>
           </div>
+        ) : filteredCourses.length === 0 ? (
+          <div className="text-center py-20" style={{ color: "var(--color-on-surface-variant)" }}>
+            <span className="material-symbols-outlined text-6xl opacity-30 block mb-3">search_off</span>
+            <p className="text-lg font-medium">No matching courses found</p>
+            <p className="text-sm mt-1">Try a different search term.</p>
+          </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-            {courses.map((course) => {
+            {filteredCourses.map((course) => {
               const colors = colorMap[course.colorVariant];
               return (
                 <div key={course.id} className="rounded-xl p-6 flex flex-col card-shadow border transition-all duration-300"

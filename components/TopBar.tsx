@@ -8,11 +8,22 @@ import { mockStudent } from "@/lib/mock-data";
 interface TopBarProps {
   title?: string;
   showSearch?: boolean;
+  searchValue?: string;
+  onSearchChange?: (value: string) => void;
+  searchPlaceholder?: string;
 }
 
-export default function TopBar({ title, showSearch = true }: TopBarProps) {
+export default function TopBar({
+  title,
+  showSearch = true,
+  searchValue,
+  onSearchChange,
+  searchPlaceholder = "Search courses...",
+}: TopBarProps) {
   const { theme, toggleTheme } = useTheme();
-  const [searchValue, setSearchValue] = useState("");
+  const [internalSearchValue, setInternalSearchValue] = useState("");
+  const currentSearchValue = searchValue ?? internalSearchValue;
+  const handleSearchChange = onSearchChange ?? setInternalSearchValue;
 
   return (
     <header
@@ -56,9 +67,9 @@ export default function TopBar({ title, showSearch = true }: TopBarProps) {
             </span>
             <input
               type="text"
-              placeholder="Search courses..."
-              value={searchValue}
-              onChange={(e) => setSearchValue(e.target.value)}
+              placeholder={searchPlaceholder}
+              value={currentSearchValue}
+              onChange={(e) => handleSearchChange(e.target.value)}
               className="bg-transparent border-none outline-none w-full text-sm"
               style={{ color: "var(--color-on-surface)" }}
             />

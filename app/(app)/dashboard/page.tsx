@@ -40,7 +40,9 @@ export default function DashboardPage() {
   const [student, setStudent] = useState<Student | null>(null);
   const [courses, setCourses] = useState<Course[]>([]);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
+  const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
+  const normalizedSearch = search.trim().toLowerCase();
 
   useEffect(() => {
     async function fetchData() {
@@ -63,7 +65,12 @@ export default function DashboardPage() {
   if (loading || !student) {
     return (
       <>
-        <TopBar title="Dashboard" />
+        <TopBar
+          title="Dashboard"
+          searchValue={search}
+          onSearchChange={setSearch}
+          searchPlaceholder="Search dashboard..."
+        />
         <main className="flex-1 p-6 md:p-8 mx-auto w-full" style={{ maxWidth: "var(--spacing-container_max)" }}>
           <p style={{ color: "var(--color-on-surface-variant)" }}>Loading...</p>
         </main>
@@ -73,6 +80,21 @@ export default function DashboardPage() {
 
   const totalCredits = courses.reduce((s, c) => s + c.credits, 0);
   const creditsRemaining = student.creditLimit - totalCredits;
+  const filteredCourses = courses.filter(
+    (course) =>
+      !normalizedSearch ||
+      course.code.toLowerCase().includes(normalizedSearch) ||
+      course.name.toLowerCase().includes(normalizedSearch) ||
+      course.instructor.toLowerCase().includes(normalizedSearch) ||
+      course.schedule.toLowerCase().includes(normalizedSearch) ||
+      course.department.toLowerCase().includes(normalizedSearch)
+  );
+  const filteredAnnouncements = announcements.filter(
+    (announcement) =>
+      !normalizedSearch ||
+      announcement.title.toLowerCase().includes(normalizedSearch) ||
+      announcement.body.toLowerCase().includes(normalizedSearch)
+  );
 
   const stats = [
     { label: "Registered Courses", value: courses.length.toString(), icon: "book", iconBg: "var(--color-primary-fixed)", iconColor: "var(--color-primary)", large: true },
@@ -89,7 +111,12 @@ export default function DashboardPage() {
 
   return (
     <>
-      <TopBar title="Dashboard" />
+      <TopBar
+        title="Dashboard"
+        searchValue={search}
+        onSearchChange={setSearch}
+        searchPlaceholder="Search dashboard..."
+      />
       <main className="flex-1 p-6 md:p-8 mx-auto w-full" style={{ maxWidth: "var(--spacing-container_max)" }}>
         <div className="mb-8">
           <h2 className="text-3xl font-bold mb-1" style={{ color: "var(--color-on-surface)" }}>
@@ -135,17 +162,23 @@ export default function DashboardPage() {
               <button className="text-xs font-semibold transition-colors" style={{ color: "var(--color-primary)" }}>View All</button>
             </div>
             <ul className="space-y-1 divide-y" style={{ borderColor: "var(--color-surface-variant)" }}>
-              {announcements.map((ann) => (
-                <li key={ann.id} className="py-2">
-                  <div className="flex items-start gap-2">
-                    <span className="material-symbols-outlined mt-0.5 text-[18px] shrink-0" style={{ color: `var(--color-${ann.iconColor})` }}>{ann.icon}</span>
-                    <div>
-                      <p className="text-sm font-medium" style={{ color: "var(--color-on-surface)" }}>{ann.title}</p>
-                      <p className="text-xs mt-0.5 line-clamp-2" style={{ color: "var(--color-on-surface-variant)" }}>{ann.body}</p>
-                    </div>
-                  </div>
+              {filteredAnnouncements.length === 0 ? (
+                <li className="py-2 text-sm" style={{ color: "var(--color-on-surface-variant)" }}>
+                  No matching announcements.
                 </li>
-              ))}
+              ) : (
+                filteredAnnouncements.map((ann) => (
+                  <li key={ann.id} className="py-2">
+                    <div className="flex items-start gap-2">
+                      <span className="material-symbols-outlined mt-0.5 text-[18px] shrink-0" style={{ color: `var(--color-${ann.iconColor})` }}>{ann.icon}</span>
+                      <div>
+                        <p className="text-sm font-medium" style={{ color: "var(--color-on-surface)" }}>{ann.title}</p>
+                        <p className="text-xs mt-0.5 line-clamp-2" style={{ color: "var(--color-on-surface-variant)" }}>{ann.body}</p>
+                      </div>
+                    </div>
+                  </li>
+                ))
+              )}
             </ul>
           </div>
         </div>
@@ -165,15 +198,23 @@ export default function DashboardPage() {
                 </tr>
               </thead>
               <tbody>
-                {courses.map((c) => (
-                  <tr key={c.id} style={{ borderBottom: "1px solid var(--color-surface-container)" }}>
-                    <td className="py-3 pr-4"><span className="px-2 py-0.5 rounded text-xs font-semibold" style={{ backgroundColor: "var(--color-primary-fixed)", color: "var(--color-on-primary-fixed)" }}>{c.code}</span></td>
-                    <td className="py-3 pr-4 font-medium" style={{ color: "var(--color-on-surface)" }}>{c.name}</td>
-                    <td className="py-3 pr-4" style={{ color: "var(--color-on-surface-variant)" }}>{c.credits}</td>
-                    <td className="py-3 pr-4" style={{ color: "var(--color-on-surface-variant)" }}>{c.schedule}</td>
-                    <td className="py-3" style={{ color: "var(--color-on-surface-variant)" }}>{c.instructor}</td>
+                {filteredCourses.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="py-6 text-sm text-center" style={{ color: "var(--color-on-surface-variant)" }}>
+                      No matching courses.
+                    </td>
                   </tr>
-                ))}
+                ) : (
+                  filteredCourses.map((c) => (
+                    <tr key={c.id} style={{ borderBottom: "1px solid var(--color-surface-container)" }}>
+                      <td className="py-3 pr-4"><span className="px-2 py-0.5 rounded text-xs font-semibold" style={{ backgroundColor: "var(--color-primary-fixed)", color: "var(--color-on-primary-fixed)" }}>{c.code}</span></td>
+                      <td className="py-3 pr-4 font-medium" style={{ color: "var(--color-on-surface)" }}>{c.name}</td>
+                      <td className="py-3 pr-4" style={{ color: "var(--color-on-surface-variant)" }}>{c.credits}</td>
+                      <td className="py-3 pr-4" style={{ color: "var(--color-on-surface-variant)" }}>{c.schedule}</td>
+                      <td className="py-3" style={{ color: "var(--color-on-surface-variant)" }}>{c.instructor}</td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>

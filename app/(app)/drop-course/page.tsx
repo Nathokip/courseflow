@@ -22,7 +22,9 @@ export default function DropCoursePage() {
   const [courses, setCourses] = useState<Course[]>([]);
   const [pendingDrop, setPendingDrop] = useState<Course | null>(null);
   const [dropped, setDropped] = useState<string[]>([]);
+  const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
+  const normalizedSearch = search.trim().toLowerCase();
 
   useEffect(() => {
     fetch("/api/courses/droppable")
@@ -32,6 +34,16 @@ export default function DropCoursePage() {
       })
       .catch(() => setLoading(false));
   }, []);
+
+  const filteredCourses = courses.filter(
+    (course) =>
+      !normalizedSearch ||
+      course.code.toLowerCase().includes(normalizedSearch) ||
+      course.name.toLowerCase().includes(normalizedSearch) ||
+      course.instructor.toLowerCase().includes(normalizedSearch) ||
+      course.schedule.toLowerCase().includes(normalizedSearch) ||
+      course.department.toLowerCase().includes(normalizedSearch)
+  );
 
   function openModal(course: Course) {
     setPendingDrop(course);
@@ -57,7 +69,12 @@ export default function DropCoursePage() {
 
   return (
     <>
-      <TopBar title="Drop Course" />
+      <TopBar
+        title="Drop Course"
+        searchValue={search}
+        onSearchChange={setSearch}
+        searchPlaceholder="Search enrolled courses..."
+      />
       <main className="flex-1 p-6 md:p-8 mx-auto w-full relative" style={{ maxWidth: "var(--spacing-container_max)" }}>
         <div className="mb-8">
           <p className="text-xs font-bold uppercase tracking-widest mb-1" style={{ color: "var(--color-primary)" }}>Manage Enrollments</p>
@@ -82,9 +99,15 @@ export default function DropCoursePage() {
             <span className="material-symbols-outlined text-6xl opacity-30 block mb-3">check_circle</span>
             <p className="text-lg font-medium">No enrolled courses to drop.</p>
           </div>
+        ) : filteredCourses.length === 0 ? (
+          <div className="text-center py-20" style={{ color: "var(--color-on-surface-variant)" }}>
+            <span className="material-symbols-outlined text-6xl opacity-30 block mb-3">search_off</span>
+            <p className="text-lg font-medium">No matching courses found</p>
+            <p className="text-sm mt-1">Try a different search term.</p>
+          </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {courses.map((course) => (
+            {filteredCourses.map((course) => (
               <div key={course.id} className="rounded-xl p-6 flex flex-col relative overflow-hidden group transition-shadow card-shadow hover:card-shadow-md"
                 style={{ backgroundColor: "var(--color-surface-container-lowest)", borderTop: "4px solid var(--color-error)" }}>
                 <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"

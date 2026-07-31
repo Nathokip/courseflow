@@ -20,15 +20,25 @@ interface Course {
 }
 
 const MAX_CREDITS = 18;
-const departments = ["All", "Computer Science", "Mathematics", "Physics", "Software Engineering"];
+const semesterFilters = ["All Semesters", "Semester 1", "Semester 2"];
+const departmentFilters = [
+  "All Departments",
+  "Computer Science",
+  "Mathematics",
+  "Physics",
+  "Software Engineering",
+];
 
 export default function RegisterCoursesPage() {
   const [availableCourses, setAvailableCourses] = useState<Course[]>([]);
   const [cart, setCart] = useState<Course[]>([]);
-  const [activeFilter, setActiveFilter] = useState("All");
+  const [activeSemesterFilter, setActiveSemesterFilter] = useState("All Semesters");
+  const [activeDepartmentFilter, setActiveDepartmentFilter] = useState("All Departments");
+  const [search, setSearch] = useState("");
   const [confirmed, setConfirmed] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const [error, setError] = useState("");
+  const normalizedSearch = search.trim().toLowerCase();
 
   useEffect(() => {
     async function fetchData() {
@@ -50,9 +60,24 @@ export default function RegisterCoursesPage() {
   const totalCredits = cart.reduce((s, c) => s + c.credits, 0);
   const creditPct = Math.min((totalCredits / MAX_CREDITS) * 100, 100);
 
-  const filtered = availableCourses.filter(
-    (c) => activeFilter === "All" || c.department === activeFilter
-  );
+  const filtered = availableCourses.filter((c) => {
+    const matchSemester =
+      activeSemesterFilter === "All Semesters" ||
+      (activeSemesterFilter === "Semester 1" ? c.semester === "Sem 1" : false) ||
+      (activeSemesterFilter === "Semester 2" ? c.semester === "Sem 2" : false);
+    const matchDepartment =
+      activeDepartmentFilter === "All Departments" ||
+      c.department === activeDepartmentFilter;
+    const matchSearch =
+      !normalizedSearch ||
+      c.name.toLowerCase().includes(normalizedSearch) ||
+      c.code.toLowerCase().includes(normalizedSearch) ||
+      c.instructor.toLowerCase().includes(normalizedSearch) ||
+      c.description.toLowerCase().includes(normalizedSearch) ||
+      c.department.toLowerCase().includes(normalizedSearch);
+
+    return matchSemester && matchDepartment && matchSearch;
+  });
 
   async function addCourse(course: Course) {
     if (cartIds.has(course.id)) return;
@@ -104,7 +129,12 @@ export default function RegisterCoursesPage() {
 
   return (
     <>
-      <TopBar title="Course Registration" />
+      <TopBar
+        title="Course Registration"
+        searchValue={search}
+        onSearchChange={setSearch}
+        searchPlaceholder="Search available courses..."
+      />
       <main className="flex-1 p-6 md:p-8 mx-auto w-full" style={{ maxWidth: "var(--spacing-container_max)" }}>
         <div className="mb-6 flex justify-between items-end flex-wrap gap-4">
           <div>
@@ -119,21 +149,82 @@ export default function RegisterCoursesPage() {
 
         <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
           <div className="xl:col-span-8 space-y-6">
-            <div className="flex flex-wrap gap-2">
-              {departments.map((dep) => {
-                const active = dep === activeFilter;
-                return (
-                  <button key={dep} onClick={() => setActiveFilter(dep)}
-                    className="px-4 py-1.5 rounded-full text-sm font-medium transition-all"
-                    style={active ? { backgroundColor: "var(--color-primary-container)", color: "var(--color-on-primary-container)" } : { backgroundColor: "var(--color-surface-container-lowest)", color: "var(--color-on-surface-variant)", border: "1px solid var(--color-outline-variant)" }}>
-                    {dep}
-                  </button>
-                );
-              })}
+            <div className="space-y-4">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-widest mb-2" style={{ color: "var(--color-on-surface-variant)" }}>
+                  Semester
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {semesterFilters.map((semester) => {
+                    const active = semester === activeSemesterFilter;
+                    return (
+                      <button
+                        key={semester}
+                        onClick={() => setActiveSemesterFilter(semester)}
+                        className="px-4 py-1.5 rounded-full text-sm font-medium transition-all"
+                        style={
+                          active
+                            ? {
+                                backgroundColor: "var(--color-primary-container)",
+                                color: "var(--color-on-primary-container)",
+                              }
+                            : {
+                                backgroundColor: "var(--color-surface-container-lowest)",
+                                color: "var(--color-on-surface-variant)",
+                                border: "1px solid var(--color-outline-variant)",
+                              }
+                        }
+                      >
+                        {semester}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div>
+                <p className="text-xs font-bold uppercase tracking-widest mb-2" style={{ color: "var(--color-on-surface-variant)" }}>
+                  Department
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {departmentFilters.map((department) => {
+                    const active = department === activeDepartmentFilter;
+                    return (
+                      <button
+                        key={department}
+                        onClick={() => setActiveDepartmentFilter(department)}
+                        className="px-4 py-1.5 rounded-full text-sm font-medium transition-all"
+                        style={
+                          active
+                            ? {
+                                backgroundColor: "var(--color-primary-container)",
+                                color: "var(--color-on-primary-container)",
+                              }
+                            : {
+                                backgroundColor: "var(--color-surface-container-lowest)",
+                                color: "var(--color-on-surface-variant)",
+                                border: "1px solid var(--color-outline-variant)",
+                              }
+                        }
+                      >
+                        {department}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {filtered.map((course) => {
+            {filtered.length === 0 ? (
+              <div className="rounded-xl border p-8 text-center" style={{ backgroundColor: "var(--color-surface-container-lowest)", borderColor: "var(--color-outline-variant)" }}>
+                <p className="text-lg font-medium" style={{ color: "var(--color-on-surface)" }}>No matching courses found</p>
+                <p className="text-sm mt-1" style={{ color: "var(--color-on-surface-variant)" }}>
+                  Try a different search term or department filter.
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {filtered.map((course) => {
                 const isFull = course.enrolled >= course.capacity;
                 const inCart = cartIds.has(course.id);
                 const wouldExceed = totalCredits + course.credits > MAX_CREDITS;
@@ -168,8 +259,9 @@ export default function RegisterCoursesPage() {
                     </button>
                   </div>
                 );
-              })}
-            </div>
+                })}
+              </div>
+            )}
           </div>
 
           <div className="xl:col-span-4 xl:sticky" style={{ top: "100px" }}>
