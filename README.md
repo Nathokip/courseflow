@@ -1,168 +1,155 @@
-# CourseFlow — Student Course Registration System
+# CourseFlow
 
-A frontend prototype for a university course registration portal built with **Next.js 16**, **TypeScript**, and **Tailwind CSS v4**. All data is currently mocked — the app is fully functional as a UI/UX demo, ready for db and backend.
+CourseFlow is a university course registration portal built with **Next.js 16**, **TypeScript**, **Tailwind CSS v4**, **Prisma**, **PostgreSQL**, and **NextAuth**.
 
----
+The app includes:
 
-## Pages
+- credential-based sign in and sign up
+- a dashboard for student progress and announcements
+- course browsing, registration, and drop flows
+- Prisma-backed data models and seeded demo data
 
-| Route | Description |
-|---|---|
-| `/login` | Login screen with mock authentication |
-| `/dashboard` | Overview — stats, quick actions, announcements |
-| `/available-courses` | Browse and filter all available courses |
-| `/register-courses` | Add courses to cart and confirm registration |
-| `/my-courses` | View currently enrolled courses |
-| `/drop-course` | Drop an enrolled course (with confirmation modal) |
-| `/profile` | Student account info |
+## Features
 
----
+- `/login` and `/signup` authentication screens
+- `/dashboard` student overview
+- `/available-courses` course catalog with filters and search
+- `/register-courses` registration cart and confirmation flow
+- `/my-courses` enrolled course list
+- `/drop-course` course drop flow with confirmation
+- `/profile` student profile view
+
+## Tech Stack
+
+- **Next.js 16** - App Router, client and server components
+- **React 19**
+- **TypeScript**
+- **Tailwind CSS v4**
+- **Prisma** - database access and schema management
+- **PostgreSQL** - persistent storage
+- **NextAuth** - credentials authentication
 
 ## Requirements
 
-| Dependency | Version | Notes |
-|---|---|---|
-| Node.js | **18.x or higher** (20+ recommended) | JavaScript runtime |
-| pnpm | **8.x or higher** | Package manager (used in this project) |
+- Node.js 20 or newer is recommended
+- pnpm 8 or newer
+- PostgreSQL 17 or compatible
 
-> npm or yarn will also work but pnpm is what the lockfile is generated with.
+## Setup
 
----
-
-## Installation
-
-### macOS
+1. Start PostgreSQL:
 
 ```bash
-# 1. Install Node.js via Homebrew (skip if already installed)
-brew install node
-
-# 2. Install pnpm
-npm install -g pnpm
-
-# 3. Verify
-node --version   # should be 18+
-pnpm --version   # should be 8+
+docker compose up -d
 ```
 
-### Windows
-
-```powershell
-# 1. Install Node.js
-#    Download the LTS installer from https://nodejs.org and run it
-#    OR use winget:
-winget install OpenJS.NodeJS.LTS
-
-# 2. Install pnpm
-npm install -g pnpm
-
-# 3. Verify (in a new terminal)
-node --version
-pnpm --version
-```
-
-### Linux (Ubuntu / Debian)
+2. Configure environment variables:
 
 ```bash
-# 1. Install Node.js via NodeSource (Node 20 LTS)
-curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
-sudo apt-get install -y nodejs
-
-# 2. Install pnpm
-npm install -g pnpm
-
-# 3. Verify
-node --version
-pnpm --version
+cp .env.example .env
 ```
 
-### Linux (Arch / Manjaro)
+The default local database URL points to the Postgres container started by Docker Compose:
 
-```bash
-sudo pacman -S nodejs npm
-npm install -g pnpm
+```env
+DATABASE_URL="postgresql://postgres:postgres@localhost:5433/courseflow"
+AUTH_SECRET="change-me-to-a-random-secret-in-production"
 ```
 
----
-
-## Setup & Running
+3. Install dependencies:
 
 ```bash
-# 1. Clone or navigate to the project folder
-cd courseflow
-
-# 2. Install dependencies
 pnpm install
+```
 
-# 3. Start the development server
+4. Push the Prisma schema and seed demo data:
+
+```bash
+pnpm db:push
+pnpm db:seed
+```
+
+5. Start the development server:
+
+```bash
 pnpm dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) in your browser. The app redirects to `/login` automatically.
+Open [http://localhost:3000](http://localhost:3000). The root route redirects to `/login`.
 
-**Login credentials (mock):** any email + any password will work — click Login and it takes you to the dashboard.
+## Demo Login
 
----
+Seeded demo user:
 
-## Other Commands
+- Email: `alex.johnson@university.edu`
+- Password: `password123`
+
+You can also create a new account from `/signup`.
+
+## Scripts
 
 ```bash
-# Production build (checks for errors)
-pnpm build
-
-# Run production build locally
-pnpm start
-
-# Lint
-pnpm lint
+pnpm dev         # Start the development server
+pnpm build       # Build for production
+pnpm start       # Run the production build
+pnpm lint        # Run ESLint
+pnpm db:generate # Generate Prisma Client
+pnpm db:push     # Push schema changes to the database
+pnpm db:migrate  # Create and apply a Prisma migration
+pnpm db:seed     # Seed the database
+pnpm db:studio   # Open Prisma Studio
 ```
-
----
 
 ## Project Structure
 
-```
+```text
 courseflow/
 ├── app/
-│   ├── (app)/                  # Authenticated pages (with sidebar layout)
+│   ├── (app)/                  # Authenticated pages and shared layout
 │   │   ├── dashboard/
 │   │   ├── available-courses/
 │   │   ├── register-courses/
 │   │   ├── my-courses/
 │   │   ├── drop-course/
-│   │   ├── profile/
-│   │   └── layout.tsx          # Shared sidebar layout
-│   ├── login/                  # Login page (no sidebar)
-│   ├── globals.css             # Design system tokens + base styles
-│   ├── layout.tsx              # Root layout (fonts, theme provider)
+│   │   └── profile/
+│   ├── api/                    # Route handlers for student, courses, auth, and cart flows
+│   ├── login/
+│   ├── signup/
+│   ├── globals.css
+│   ├── layout.tsx
 │   └── page.tsx                # Redirects to /login
 ├── components/
-│   ├── Sidebar.tsx             # Navigation sidebar
-│   └── TopBar.tsx              # Top header bar with dark mode toggle
-└── lib/
-    ├── mock-data.ts            # All mock data — replace with API calls later
-    └── theme-context.tsx       # Light/dark mode context
+│   ├── SessionProvider.tsx
+│   ├── Sidebar.tsx
+│   └── TopBar.tsx
+├── lib/
+│   ├── auth.ts
+│   ├── auth.config.ts
+│   ├── prisma.ts
+│   ├── mock-data.ts
+│   └── theme-context.tsx
+├── prisma/
+│   ├── schema.prisma
+│   └── seed.ts
+└── docker-compose.yml
 ```
 
----
+## Database
 
-## Replacing Mock Data
+The Prisma schema defines:
 
-All data lives in `lib/mock-data.ts`. When the backend is ready, replace the exports with API calls — the components consume them as typed interfaces so swapping the source requires no component changes.
+- `User`
+- `Account`
+- `Session`
+- `VerificationToken`
+- `Course`
+- `Announcement`
+- `Registration`
+- `CartItem`
 
-```ts
-// Before (mock)
-import { registeredCourses } from "@/lib/mock-data";
+Seed data creates the demo student and sample courses/announcements used by the UI.
 
-// After (real API)
-const registeredCourses = await fetch("/api/courses/registered").then(r => r.json());
-```
+## Notes
 
----
-
-## Tech Stack
-
-- **[Next.js 16](https://nextjs.org/)** — App Router, TypeScript
-- **[Tailwind CSS v4](https://tailwindcss.com/)** — Utility-first styling
-- **[Inter](https://fonts.google.com/specimen/Inter)** — Font (via next/font)
-- **[Material Symbols](https://fonts.google.com/icons)** — Icon set (Google Fonts)
+- Mock data still exists in `lib/mock-data.ts` for parts of the UI that have not been wired to the database yet.
+- The login page uses NextAuth credentials auth, and signup creates a local user through the app API route.
