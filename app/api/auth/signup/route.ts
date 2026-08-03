@@ -44,6 +44,7 @@ export async function POST(request: Request) {
         email,
         studentId,
         password: hashedPassword,
+        role: "student",
         semester: "Spring 2025",
       },
     });

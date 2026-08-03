@@ -12,6 +12,7 @@ model User {
   password      String
   name          String
   studentId     String         @unique
+  role          String         @default("student")
   semester      String         @default("Spring 2025")
   avatarUrl     String         @default("")
   registeredCredits Int       @default(0)
@@ -25,6 +26,7 @@ model User {
   sessions      Session[]
   registrations Registration[]
   cartItems     CartItem[]
+  passwordResetTokens PasswordResetToken[]
 }
 
 model Account {
@@ -72,6 +74,7 @@ model Course {
   schedule      String
   department    String
   semester      String
+  year          Int            @default(1)
   enrolled      Int            @default(0)
   capacity      Int
   colorVariant  String         @default("primary")
@@ -112,4 +115,18 @@ model CartItem {
   course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
 
   @@unique([userId, courseId])
+}
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  userId    String
+  tokenHash String   @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
 }

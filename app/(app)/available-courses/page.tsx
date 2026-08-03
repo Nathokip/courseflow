@@ -13,6 +13,7 @@ interface Course {
   schedule: string;
   department: string;
   semester: string;
+  year: number;
   enrolled: number;
   capacity: number;
   colorVariant: "primary" | "secondary" | "tertiary" | "error";
@@ -20,12 +21,16 @@ interface Course {
 
 const semesterFilters = ["All Semesters", "Semester 1", "Semester 2"];
 
+const yearFilters = ["All Years", "Year 1", "Year 2", "Year 3", "Year 4"];
+
 const departmentFilters = [
   "All Departments",
   "Computer Science",
   "Software Engineering",
   "Mathematics",
   "Physics",
+  "English",
+  "History",
 ];
 
 const colorMap: Record<string, { bg: string; text: string }> = {
@@ -38,6 +43,7 @@ const colorMap: Record<string, { bg: string; text: string }> = {
 export default function AvailableCoursesPage() {
   const [courses, setCourses] = useState<Course[]>([]);
   const [activeSemesterFilter, setActiveSemesterFilter] = useState("All Semesters");
+  const [activeYearFilter, setActiveYearFilter] = useState("All Years");
   const [activeDepartmentFilter, setActiveDepartmentFilter] = useState("All Departments");
   const [search, setSearch] = useState("");
   const normalizedSearch = search.trim().toLowerCase();
@@ -55,6 +61,9 @@ export default function AvailableCoursesPage() {
       activeSemesterFilter === "All Semesters" ||
       (activeSemesterFilter === "Semester 1" ? c.semester === "Sem 1" : false) ||
       (activeSemesterFilter === "Semester 2" ? c.semester === "Sem 2" : false);
+    const matchYear =
+      activeYearFilter === "All Years" ||
+      c.year === parseInt(activeYearFilter.replace("Year ", ""));
     const matchDepartment =
       activeDepartmentFilter === "All Departments" ||
       activeDepartmentFilter === c.department;
@@ -63,7 +72,7 @@ export default function AvailableCoursesPage() {
       c.name.toLowerCase().includes(normalizedSearch) ||
       c.code.toLowerCase().includes(normalizedSearch) ||
       c.instructor.toLowerCase().includes(normalizedSearch);
-    return matchSemester && matchDepartment && matchSearch;
+    return matchSemester && matchYear && matchDepartment && matchSearch;
   });
 
   return (
@@ -95,20 +104,38 @@ export default function AvailableCoursesPage() {
                     className="px-4 py-1.5 rounded-full text-sm font-medium transition-all"
                     style={
                       active
-                        ? {
-                            backgroundColor: "var(--color-primary-container)",
-                            color: "var(--color-on-primary-container)",
-                            border: "1px solid var(--color-primary)",
-                          }
-                        : {
-                            backgroundColor: "var(--color-surface)",
-                            color: "var(--color-on-surface-variant)",
-                            border: "1px solid var(--color-outline-variant)",
-                          }
+                        ? { backgroundColor: "var(--color-primary-container)", color: "var(--color-on-primary-container)", border: "1px solid var(--color-primary)" }
+                        : { backgroundColor: "var(--color-surface)", color: "var(--color-on-surface-variant)", border: "1px solid var(--color-outline-variant)" }
                     }
                   >
                     {active && <span className="material-symbols-outlined text-[14px] mr-1 align-middle">check</span>}
                     {semester}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <div>
+            <p className="text-xs font-bold uppercase tracking-widest mb-2" style={{ color: "var(--color-on-surface-variant)" }}>
+              Year of Study
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {yearFilters.map((year) => {
+                const active = year === activeYearFilter;
+                return (
+                  <button
+                    key={year}
+                    onClick={() => setActiveYearFilter(year)}
+                    className="px-4 py-1.5 rounded-full text-sm font-medium transition-all"
+                    style={
+                      active
+                        ? { backgroundColor: "var(--color-secondary-container)", color: "var(--color-on-secondary-container)", border: "1px solid var(--color-secondary)" }
+                        : { backgroundColor: "var(--color-surface)", color: "var(--color-on-surface-variant)", border: "1px solid var(--color-outline-variant)" }
+                    }
+                  >
+                    {active && <span className="material-symbols-outlined text-[14px] mr-1 align-middle">check</span>}
+                    {year}
                   </button>
                 );
               })}
@@ -129,16 +156,8 @@ export default function AvailableCoursesPage() {
                     className="px-4 py-1.5 rounded-full text-sm font-medium transition-all"
                     style={
                       active
-                        ? {
-                            backgroundColor: "var(--color-primary-container)",
-                            color: "var(--color-on-primary-container)",
-                            border: "1px solid var(--color-primary)",
-                          }
-                        : {
-                            backgroundColor: "var(--color-surface)",
-                            color: "var(--color-on-surface-variant)",
-                            border: "1px solid var(--color-outline-variant)",
-                          }
+                        ? { backgroundColor: "var(--color-tertiary-container)", color: "var(--color-on-tertiary-container)", border: "1px solid var(--color-tertiary)" }
+                        : { backgroundColor: "var(--color-surface)", color: "var(--color-on-surface-variant)", border: "1px solid var(--color-outline-variant)" }
                     }
                   >
                     {active && <span className="material-symbols-outlined text-[14px] mr-1 align-middle">check</span>}
@@ -166,9 +185,13 @@ export default function AvailableCoursesPage() {
                   style={{ backgroundColor: "var(--color-surface-container-lowest)" }}>
                   <div className="flex justify-between items-start mb-4">
                     <span className="px-2 py-1 rounded-md text-xs font-semibold" style={{ backgroundColor: colors.bg, color: colors.text }}>{course.code}</span>
-                    <span className="px-2 py-1 rounded-md text-xs font-medium" style={{ backgroundColor: "var(--color-surface-container)", color: "var(--color-on-surface-variant)" }}>{course.semester}</span>
+                    <div className="flex items-center gap-1">
+                      <span className="px-2 py-1 rounded-md text-xs font-medium" style={{ backgroundColor: "var(--color-surface-container)", color: "var(--color-on-surface-variant)" }}>Year {course.year}</span>
+                      <span className="px-2 py-1 rounded-md text-xs font-medium" style={{ backgroundColor: "var(--color-surface-container)", color: "var(--color-on-surface-variant)" }}>{course.semester}</span>
+                    </div>
                   </div>
                   <h3 className="text-lg font-semibold mb-1" style={{ color: "var(--color-on-surface)" }}>{course.name}</h3>
+                  <p className="text-xs font-medium mb-2" style={{ color: "var(--color-on-surface-variant)" }}>{course.department}</p>
                   <p className="text-sm flex-1 mb-4" style={{ color: "var(--color-on-surface-variant)" }}>{course.description}</p>
                   <div className="flex items-center gap-4 mb-4">
                     <div className="flex items-center gap-1 text-sm" style={{ color: "var(--color-on-surface-variant)" }}>

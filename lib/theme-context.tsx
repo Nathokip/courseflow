@@ -1,11 +1,11 @@
 "use client";
 
-import React, {
+import {
   createContext,
   useContext,
   useEffect,
   useState,
-  ReactNode,
+  type ReactNode,
 } from "react";
 
 type Theme = "light" | "dark";
@@ -23,18 +23,15 @@ const ThemeContext = createContext<ThemeContextValue>({
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setTheme] = useState<Theme>("light");
 
-  // On mount, read from localStorage — default to light if nothing stored
   useEffect(() => {
-    const stored = localStorage.getItem("ss-theme") as Theme | null;
-    if (stored === "dark") {
-      setTheme("dark");
-    } else {
-      // Always default to light unless user explicitly chose dark
-      setTheme("light");
-    }
+    const timeoutId = window.setTimeout(() => {
+      const stored = localStorage.getItem("ss-theme") as Theme | null;
+      setTheme(stored === "dark" ? "dark" : "light");
+    }, 0);
+
+    return () => window.clearTimeout(timeoutId);
   }, []);
 
-  // Apply class to <html>
   useEffect(() => {
     const root = document.documentElement;
     if (theme === "dark") {

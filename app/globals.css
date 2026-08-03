@@ -79,9 +79,9 @@
   --radius-full: 9999px;
 }
 
-/* Font family — defined outside @theme so var(--font-inter) resolves at runtime */
 :root {
-  --font-sans: var(--font-inter), "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+    "Segoe UI", sans-serif;
 }
 
 /* =========================================
@@ -135,6 +135,11 @@
    ========================================= */
 * {
   box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
 }
 
 html {

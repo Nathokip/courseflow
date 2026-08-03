@@ -32,7 +32,9 @@ export default function LoginPage() {
     if (result?.error) {
       setError("Invalid email or password.");
     } else {
-      router.push("/dashboard");
+      const sessionRes = await fetch("/api/auth/session");
+      const session = await sessionRes.json().catch(() => null);
+      router.push(session?.user?.role === "admin" ? "/admin" : "/dashboard");
     }
   }
 
@@ -124,13 +126,13 @@ export default function LoginPage() {
                 style={{ color: "var(--color-on-surface)" }}
               >
                 Password
-                <a
-                  href="#"
+                <Link
+                  href="/forgot-password"
                   className="text-sm font-medium transition-colors"
                   style={{ color: "var(--color-primary)" }}
                 >
                   Forgot password?
-                </a>
+                </Link>
               </label>
               <input
                 id="password"

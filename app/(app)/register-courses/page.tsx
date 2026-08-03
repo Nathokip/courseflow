@@ -13,6 +13,7 @@ interface Course {
   schedule: string;
   department: string;
   semester: string;
+  year: number;
   enrolled: number;
   capacity: number;
   colorVariant: string;
@@ -21,18 +22,22 @@ interface Course {
 
 const MAX_CREDITS = 18;
 const semesterFilters = ["All Semesters", "Semester 1", "Semester 2"];
+const yearFilters = ["All Years", "Year 1", "Year 2", "Year 3", "Year 4"];
 const departmentFilters = [
   "All Departments",
   "Computer Science",
   "Mathematics",
   "Physics",
   "Software Engineering",
+  "English",
+  "History",
 ];
 
 export default function RegisterCoursesPage() {
   const [availableCourses, setAvailableCourses] = useState<Course[]>([]);
   const [cart, setCart] = useState<Course[]>([]);
   const [activeSemesterFilter, setActiveSemesterFilter] = useState("All Semesters");
+  const [activeYearFilter, setActiveYearFilter] = useState("All Years");
   const [activeDepartmentFilter, setActiveDepartmentFilter] = useState("All Departments");
   const [search, setSearch] = useState("");
   const [confirmed, setConfirmed] = useState(false);
@@ -65,6 +70,9 @@ export default function RegisterCoursesPage() {
       activeSemesterFilter === "All Semesters" ||
       (activeSemesterFilter === "Semester 1" ? c.semester === "Sem 1" : false) ||
       (activeSemesterFilter === "Semester 2" ? c.semester === "Sem 2" : false);
+    const matchYear =
+      activeYearFilter === "All Years" ||
+      c.year === parseInt(activeYearFilter.replace("Year ", ""));
     const matchDepartment =
       activeDepartmentFilter === "All Departments" ||
       c.department === activeDepartmentFilter;
@@ -76,7 +84,7 @@ export default function RegisterCoursesPage() {
       c.description.toLowerCase().includes(normalizedSearch) ||
       c.department.toLowerCase().includes(normalizedSearch);
 
-    return matchSemester && matchDepartment && matchSearch;
+    return matchSemester && matchYear && matchDepartment && matchSearch;
   });
 
   async function addCourse(course: Course) {
@@ -158,24 +166,36 @@ export default function RegisterCoursesPage() {
                   {semesterFilters.map((semester) => {
                     const active = semester === activeSemesterFilter;
                     return (
-                      <button
-                        key={semester}
-                        onClick={() => setActiveSemesterFilter(semester)}
+                      <button key={semester} onClick={() => setActiveSemesterFilter(semester)}
                         className="px-4 py-1.5 rounded-full text-sm font-medium transition-all"
-                        style={
-                          active
-                            ? {
-                                backgroundColor: "var(--color-primary-container)",
-                                color: "var(--color-on-primary-container)",
-                              }
-                            : {
-                                backgroundColor: "var(--color-surface-container-lowest)",
-                                color: "var(--color-on-surface-variant)",
-                                border: "1px solid var(--color-outline-variant)",
-                              }
-                        }
-                      >
+                        style={active
+                          ? { backgroundColor: "var(--color-primary-container)", color: "var(--color-on-primary-container)", border: "1px solid var(--color-primary)" }
+                          : { backgroundColor: "var(--color-surface-container-lowest)", color: "var(--color-on-surface-variant)", border: "1px solid var(--color-outline-variant)" }
+                        }>
+                        {active && <span className="material-symbols-outlined text-[14px] mr-1 align-middle">check</span>}
                         {semester}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div>
+                <p className="text-xs font-bold uppercase tracking-widest mb-2" style={{ color: "var(--color-on-surface-variant)" }}>
+                  Year of Study
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {yearFilters.map((year) => {
+                    const active = year === activeYearFilter;
+                    return (
+                      <button key={year} onClick={() => setActiveYearFilter(year)}
+                        className="px-4 py-1.5 rounded-full text-sm font-medium transition-all"
+                        style={active
+                          ? { backgroundColor: "var(--color-secondary-container)", color: "var(--color-on-secondary-container)", border: "1px solid var(--color-secondary)" }
+                          : { backgroundColor: "var(--color-surface-container-lowest)", color: "var(--color-on-surface-variant)", border: "1px solid var(--color-outline-variant)" }
+                        }>
+                        {active && <span className="material-symbols-outlined text-[14px] mr-1 align-middle">check</span>}
+                        {year}
                       </button>
                     );
                   })}
@@ -190,23 +210,13 @@ export default function RegisterCoursesPage() {
                   {departmentFilters.map((department) => {
                     const active = department === activeDepartmentFilter;
                     return (
-                      <button
-                        key={department}
-                        onClick={() => setActiveDepartmentFilter(department)}
+                      <button key={department} onClick={() => setActiveDepartmentFilter(department)}
                         className="px-4 py-1.5 rounded-full text-sm font-medium transition-all"
-                        style={
-                          active
-                            ? {
-                                backgroundColor: "var(--color-primary-container)",
-                                color: "var(--color-on-primary-container)",
-                              }
-                            : {
-                                backgroundColor: "var(--color-surface-container-lowest)",
-                                color: "var(--color-on-surface-variant)",
-                                border: "1px solid var(--color-outline-variant)",
-                              }
-                        }
-                      >
+                        style={active
+                          ? { backgroundColor: "var(--color-tertiary-container)", color: "var(--color-on-tertiary-container)", border: "1px solid var(--color-tertiary)" }
+                          : { backgroundColor: "var(--color-surface-container-lowest)", color: "var(--color-on-surface-variant)", border: "1px solid var(--color-outline-variant)" }
+                        }>
+                        {active && <span className="material-symbols-outlined text-[14px] mr-1 align-middle">check</span>}
                         {department}
                       </button>
                     );
@@ -236,6 +246,7 @@ export default function RegisterCoursesPage() {
                         <span className="inline-block px-2 py-1 rounded text-xs font-semibold mb-2"
                           style={{ backgroundColor: "color-mix(in srgb, var(--color-secondary-container) 20%, transparent)", color: "var(--color-secondary)" }}>{course.code}</span>
                         <h3 className="text-lg font-semibold" style={{ color: "var(--color-on-surface)" }}>{course.name}</h3>
+                        <p className="text-xs mt-0.5" style={{ color: "var(--color-on-surface-variant)" }}>{course.department} · Year {course.year} · {course.semester}</p>
                       </div>
                       <span className="text-sm font-bold shrink-0 ml-2" style={{ color: "var(--color-primary)" }}>{course.credits} Credits</span>
                     </div>

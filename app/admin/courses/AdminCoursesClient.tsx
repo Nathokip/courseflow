@@ -12,6 +12,7 @@ type Course = {
   schedule: string;
   department: string;
   semester: string;
+  year: number;
   enrolled: number;
   capacity: number;
   colorVariant: string;
@@ -39,6 +40,7 @@ const blank: FormState = {
   schedule: "",
   department: "",
   semester: "Sem 1",
+  year: 1,
   capacity: 30,
   colorVariant: "primary",
 };

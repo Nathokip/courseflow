@@ -13,6 +13,7 @@ interface Course {
   schedule: string;
   department: string;
   semester: string;
+  year: number;
   enrolled: number;
   capacity: number;
   colorVariant: "primary" | "secondary" | "tertiary" | "error";
@@ -115,6 +116,7 @@ export default function MyCoursesPage() {
                     <div>
                       <span className="px-2 py-0.5 rounded text-xs font-semibold" style={{ backgroundColor: colors.bg, color: colors.text }}>{course.code}</span>
                       <h3 className="text-lg font-semibold mt-2" style={{ color: "var(--color-on-surface)" }}>{course.name}</h3>
+                      <p className="text-xs mt-0.5" style={{ color: "var(--color-on-surface-variant)" }}>{course.department}</p>
                     </div>
                     <span className="inline-flex items-center gap-1 text-xs font-semibold px-3 py-1 rounded-full shrink-0 ml-2"
                       style={{ backgroundColor: "var(--color-tertiary-fixed)", color: "var(--color-on-tertiary-fixed)" }}>
@@ -125,6 +127,7 @@ export default function MyCoursesPage() {
                   <p className="text-sm flex-1 mb-4 line-clamp-2" style={{ color: "var(--color-on-surface-variant)" }}>{course.description}</p>
                   <div className="flex flex-col gap-2 mt-auto mb-4">
                     {[
+                      { label: "Year / Semester", value: `Year ${course.year} · ${course.semester}` },
                       { label: "Credits", value: `${course.credits}.0` },
                       { label: "Registered On", value: course.registeredOn ?? "\u2014" },
                       { label: "Instructor", value: course.instructor },

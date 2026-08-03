@@ -3,17 +3,17 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-const navItems = [
-  { href: "/dashboard", label: "Dashboard", icon: "dashboard" },
-  { href: "/available-courses", label: "Available Courses", icon: "list_alt" },
-  { href: "/register-courses", label: "Register Courses", icon: "app_registration" },
-  { href: "/my-courses", label: "My Courses", icon: "school" },
-  { href: "/drop-course", label: "Drop Course", icon: "delete_sweep" },
-  { href: "/profile", label: "Profile", icon: "person" },
-];
-
 export default function Sidebar() {
   const pathname = usePathname();
+
+  const navItems = [
+    { href: "/dashboard", label: "Dashboard", icon: "dashboard" },
+    { href: "/available-courses", label: "Available Courses", icon: "list_alt" },
+    { href: "/register-courses", label: "Register Courses", icon: "app_registration" },
+    { href: "/my-courses", label: "My Courses", icon: "school" },
+    { href: "/drop-course", label: "Drop Course", icon: "delete_sweep" },
+    { href: "/profile", label: "Profile", icon: "person" },
+  ];
 
   return (
     <aside

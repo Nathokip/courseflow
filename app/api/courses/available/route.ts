@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import type { Prisma } from "@prisma/client";
 import { auth } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 
@@ -13,7 +14,7 @@ export async function GET(request: NextRequest) {
   const semester = searchParams.get("semester");
   const search = searchParams.get("search");
 
-  const where: any = {};
+  const where: Prisma.CourseWhereInput = {};
 
   if (department && department !== "All Courses") {
     if (department === "Semester 1") where.semester = "Sem 1";

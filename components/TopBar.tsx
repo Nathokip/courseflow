@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import Image from "next/image";
+import { useSession } from "next-auth/react";
 import { useTheme } from "@/lib/theme-context";
-import { mockStudent } from "@/lib/mock-data";
 
 interface TopBarProps {
   title?: string;
@@ -21,9 +21,14 @@ export default function TopBar({
   searchPlaceholder = "Search courses...",
 }: TopBarProps) {
   const { theme, toggleTheme } = useTheme();
+  const { data: session } = useSession();
   const [internalSearchValue, setInternalSearchValue] = useState("");
   const currentSearchValue = searchValue ?? internalSearchValue;
   const handleSearchChange = onSearchChange ?? setInternalSearchValue;
+
+  const userName = session?.user?.name ?? "";
+  const avatarUrl = session?.user?.image ?? "";
+  const avatarInitial = userName.charAt(0).toUpperCase() || "?";
 
   return (
     <header
@@ -122,18 +127,22 @@ export default function TopBar({
         {/* Avatar */}
         <div
           className="w-9 h-9 rounded-full overflow-hidden border cursor-pointer ml-1 flex items-center justify-center text-sm font-semibold"
-          style={{ borderColor: "var(--color-outline-variant)", backgroundColor: "var(--color-primary-container)", color: "var(--color-on-primary-container)" }}
+          style={{
+            borderColor: "var(--color-outline-variant)",
+            backgroundColor: "var(--color-primary-container)",
+            color: "var(--color-on-primary-container)",
+          }}
         >
-          {mockStudent.avatarUrl ? (
+          {avatarUrl ? (
             <Image
-              src={mockStudent.avatarUrl}
-              alt="Student Avatar"
+              src={avatarUrl}
+              alt={userName}
               width={36}
               height={36}
               className="w-full h-full object-cover"
             />
           ) : (
-            mockStudent.name.charAt(0).toUpperCase()
+            avatarInitial
           )}
         </div>
       </div>
