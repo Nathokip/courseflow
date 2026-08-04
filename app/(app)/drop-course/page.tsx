@@ -1,7 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { createPortal } from "react-dom";
+import { useEffect, useState, useCallback } from "react";
 import TopBar from "@/components/TopBar";
 
 interface Course {
@@ -20,92 +19,107 @@ interface Course {
   colorVariant: string;
 }
 
+type DropState =
+  | { status: "idle" }
+  | { status: "confirming"; course: Course }
+  | { status: "dropping"; course: Course }
+  | { status: "error"; course: Course; message: string };
+
 export default function DropCoursePage() {
   const [courses, setCourses] = useState<Course[]>([]);
-  const [pendingDrop, setPendingDrop] = useState<Course | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState("");
   const [droppedCount, setDroppedCount] = useState(0);
   const [search, setSearch] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [dropping, setDropping] = useState(false);
-  const [dropError, setDropError] = useState("");
-  const [mounted, setMounted] = useState(false);
+  const [dropState, setDropState] = useState<DropState>({ status: "idle" });
+
   const normalizedSearch = search.trim().toLowerCase();
 
-  useEffect(() => { setMounted(true); }, []);
-
-  useEffect(() => {
-    console.log("[drop-course] fetching droppable courses...");
-    fetch("/api/courses/droppable")
-      .then(async (res) => {
-        console.log("[drop-course] droppable status:", res.status);
-        if (res.ok) {
-          const data = await res.json();
-          console.log("[drop-course] courses loaded:", data);
-          setCourses(data);
-        } else {
-          const err = await res.json().catch(() => null);
-          console.error("[drop-course] droppable error:", err);
-        }
-        setLoading(false);
-      })
-      .catch((e) => {
-        console.error("[drop-course] fetch threw:", e);
-        setLoading(false);
-      });
+  const fetchCourses = useCallback(async () => {
+    setLoading(true);
+    setFetchError("");
+    try {
+      const res = await fetch("/api/courses/droppable");
+      if (res.ok) {
+        const data: Course[] = await res.json();
+        setCourses(data);
+      } else {
+        const err = await res.json().catch(() => null);
+        setFetchError(err?.error ?? "Failed to load your enrolled courses.");
+      }
+    } catch {
+      setFetchError("Network error. Please check your connection.");
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
+  useEffect(() => {
+    fetchCourses();
+  }, [fetchCourses]);
+
   const filteredCourses = courses.filter(
-    (course) =>
+    (c) =>
       !normalizedSearch ||
-      course.code.toLowerCase().includes(normalizedSearch) ||
-      course.name.toLowerCase().includes(normalizedSearch) ||
-      course.instructor.toLowerCase().includes(normalizedSearch) ||
-      course.schedule.toLowerCase().includes(normalizedSearch) ||
-      course.department.toLowerCase().includes(normalizedSearch)
+      c.code.toLowerCase().includes(normalizedSearch) ||
+      c.name.toLowerCase().includes(normalizedSearch) ||
+      c.instructor.toLowerCase().includes(normalizedSearch) ||
+      c.schedule.toLowerCase().includes(normalizedSearch) ||
+      c.department.toLowerCase().includes(normalizedSearch)
   );
 
-  function openModal(course: Course) {
-    setDropError("");
-    setPendingDrop(course);
+  function openConfirm(course: Course) {
+    setDropState({ status: "confirming", course });
   }
 
-  function cancelDrop() {
-    if (dropping) return;
-    setPendingDrop(null);
-    setDropError("");
+  function closeModal() {
+    setDropState({ status: "idle" });
   }
 
   async function confirmDrop() {
-    if (!pendingDrop || dropping) return;
-    setDropping(true);
-    setDropError("");
-    console.log("[drop-course] confirming drop for courseId:", pendingDrop.id);
+    const state = dropState;
+    if (state.status !== "confirming" && state.status !== "error") return;
+    const course = state.course;
+
+    setDropState({ status: "dropping", course });
 
     try {
       const res = await fetch("/api/courses/drop", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ courseId: pendingDrop.id }),
+        body: JSON.stringify({ courseId: course.id }),
       });
 
-      console.log("[drop-course] drop response status:", res.status);
-
       if (res.ok) {
-        setCourses((prev) => prev.filter((c) => c.id !== pendingDrop.id));
+        setCourses((prev) => prev.filter((c) => c.id !== course.id));
         setDroppedCount((n) => n + 1);
-        setPendingDrop(null);
+        setDropState({ status: "idle" });
       } else {
         const data = await res.json().catch(() => null);
-        console.error("[drop-course] drop failed:", data);
-        setDropError(data?.error ?? "Failed to drop course. Please try again.");
+        setDropState({
+          status: "error",
+          course,
+          message: data?.error ?? "Failed to drop course. Please try again.",
+        });
       }
-    } catch (e) {
-      console.error("[drop-course] drop threw:", e);
-      setDropError("Network error. Please check your connection and try again.");
-    } finally {
-      setDropping(false);
+    } catch {
+      setDropState({
+        status: "error",
+        course,
+        message: "Network error. Please check your connection and try again.",
+      });
     }
   }
+
+  const isModalOpen =
+    dropState.status === "confirming" ||
+    dropState.status === "dropping" ||
+    dropState.status === "error";
+
+  const modalCourse =
+    isModalOpen ? dropState.course : null;
+
+  const isDropping = dropState.status === "dropping";
 
   return (
     <>
@@ -115,28 +129,82 @@ export default function DropCoursePage() {
         onSearchChange={setSearch}
         searchPlaceholder="Search enrolled courses..."
       />
-      <main className="flex-1 p-6 md:p-8 mx-auto w-full relative" style={{ maxWidth: "var(--spacing-container_max)" }}>
+
+      <main
+        className="flex-1 p-6 md:p-8 mx-auto w-full"
+        style={{ maxWidth: "var(--spacing-container_max)" }}
+      >
+        {/* Header */}
         <div className="mb-8">
-          <p className="text-xs font-bold uppercase tracking-widest mb-1" style={{ color: "var(--color-primary)" }}>Manage Enrollments</p>
-          <h1 className="text-4xl font-bold mb-3" style={{ color: "var(--color-on-surface)" }}>Drop Course</h1>
+          <p
+            className="text-xs font-bold uppercase tracking-widest mb-1"
+            style={{ color: "var(--color-primary)" }}
+          >
+            Manage Enrollments
+          </p>
+          <h1
+            className="text-4xl font-bold mb-3"
+            style={{ color: "var(--color-on-surface)" }}
+          >
+            Drop Course
+          </h1>
           <p className="text-lg" style={{ color: "var(--color-on-surface-variant)" }}>
-            Select an active enrollment below to initiate the drop procedure. Please be aware that dropping courses mid-semester may affect your academic standing. Proceed with caution.
+            Select an active enrollment below to initiate the drop procedure. Please be
+            aware that dropping courses mid-semester may affect your academic standing.
           </p>
         </div>
 
-        {droppedCount > 0 && courses.length > 0 && (
-          <div className="flex items-center gap-3 px-4 py-3 rounded-xl mb-6"
-            style={{ backgroundColor: "var(--color-tertiary-fixed)", color: "var(--color-on-tertiary-fixed)" }}>
+        {/* Session success banner */}
+        {droppedCount > 0 && (
+          <div
+            className="flex items-center gap-3 px-4 py-3 rounded-xl mb-6"
+            style={{
+              backgroundColor: "var(--color-tertiary-fixed)",
+              color: "var(--color-on-tertiary-fixed)",
+            }}
+          >
             <span className="material-symbols-outlined">check_circle</span>
-            <span className="text-sm font-medium">{droppedCount} course{droppedCount > 1 ? "s" : ""} successfully dropped this session.</span>
+            <span className="text-sm font-medium">
+              {droppedCount} course{droppedCount > 1 ? "s" : ""} successfully dropped
+              this session.
+            </span>
           </div>
         )}
 
+        {/* Fetch error */}
+        {fetchError && (
+          <div
+            className="flex items-center gap-3 px-4 py-3 rounded-xl mb-6"
+            style={{
+              backgroundColor: "var(--color-error-container)",
+              color: "var(--color-on-error-container)",
+            }}
+          >
+            <span className="material-symbols-outlined text-[20px]">error</span>
+            <span className="text-sm font-medium flex-1">{fetchError}</span>
+            <button
+              onClick={fetchCourses}
+              className="text-sm font-semibold underline"
+            >
+              Retry
+            </button>
+          </div>
+        )}
+
+        {/* Content */}
         {loading ? (
-          <p style={{ color: "var(--color-on-surface-variant)" }}>Loading...</p>
+          <div className="flex items-center gap-3 py-10" style={{ color: "var(--color-on-surface-variant)" }}>
+            <span className="material-symbols-outlined animate-spin">progress_activity</span>
+            <span>Loading your enrolled courses…</span>
+          </div>
         ) : courses.length === 0 ? (
-          <div className="text-center py-20" style={{ color: "var(--color-on-surface-variant)" }}>
-            <span className="material-symbols-outlined text-6xl opacity-30 block mb-3">check_circle</span>
+          <div
+            className="text-center py-20"
+            style={{ color: "var(--color-on-surface-variant)" }}
+          >
+            <span className="material-symbols-outlined text-6xl opacity-30 block mb-3">
+              check_circle
+            </span>
             <p className="text-lg font-medium">
               {droppedCount > 0
                 ? `All done — you dropped ${droppedCount} course${droppedCount > 1 ? "s" : ""} this session.`
@@ -144,128 +212,184 @@ export default function DropCoursePage() {
             </p>
           </div>
         ) : filteredCourses.length === 0 ? (
-          <div className="text-center py-20" style={{ color: "var(--color-on-surface-variant)" }}>
-            <span className="material-symbols-outlined text-6xl opacity-30 block mb-3">search_off</span>
+          <div
+            className="text-center py-20"
+            style={{ color: "var(--color-on-surface-variant)" }}
+          >
+            <span className="material-symbols-outlined text-6xl opacity-30 block mb-3">
+              search_off
+            </span>
             <p className="text-lg font-medium">No matching courses found</p>
             <p className="text-sm mt-1">Try a different search term.</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredCourses.map((course) => (
-              <div key={course.id} className="rounded-xl p-6 flex flex-col relative overflow-hidden group transition-shadow card-shadow hover:card-shadow-md"
-                style={{ backgroundColor: "var(--color-surface-container-lowest)", borderTop: "4px solid var(--color-error)" }}>
-                <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"
-                  style={{ background: "linear-gradient(to bottom, color-mix(in srgb, var(--color-error-container) 10%, transparent), transparent)" }} />
-
-                <div className="flex justify-between items-start mb-4 relative z-10">
-                  <div>
-                    <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-semibold mb-2"
-                      style={{ backgroundColor: "var(--color-surface-container)", color: "var(--color-on-surface)" }}>{course.code}</span>
-                    <h3 className="text-xl font-semibold leading-tight" style={{ color: "var(--color-on-surface)" }}>{course.name}</h3>
-                  </div>
-                  <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: "var(--color-error-container)" }}>
-                    <span className="material-symbols-outlined" style={{ color: "var(--color-error)", fontVariationSettings: "'FILL' 1" }}>warning</span>
-                  </div>
-                </div>
-
-                <div className="space-y-2 mb-6 relative z-10">
-                  {[
-                    { icon: "person", value: course.instructor },
-                    { icon: "schedule", value: course.schedule },
-                    { icon: "credit_score", value: `${course.credits} Credits` },
-                    { icon: "school", value: `${course.department} · Year ${course.year} · ${course.semester}` },
-                  ].map((row) => (
-                    <p key={row.icon} className="flex items-center gap-1 text-sm" style={{ color: "var(--color-on-surface-variant)" }}>
-                      <span className="material-symbols-outlined text-[18px]">{row.icon}</span>
-                      {row.value}
-                    </p>
-                  ))}
-                </div>
-
-                <div className="mt-auto pt-4 border-t relative z-10" style={{ borderColor: "var(--color-surface-variant)" }}>
-                  <button onClick={() => openModal(course)}
-                    className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border text-sm font-bold transition-all"
-                    style={{ borderColor: "var(--color-error)", color: "var(--color-error)", backgroundColor: "transparent" }}
-                    onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = "var(--color-error)"; (e.currentTarget as HTMLButtonElement).style.color = "var(--color-on-error)"; }}
-                    onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = "transparent"; (e.currentTarget as HTMLButtonElement).style.color = "var(--color-error)"; }}>
-                    <span className="material-symbols-outlined text-[20px]">delete</span>
-                    Drop Course
-                  </button>
-                </div>
-              </div>
+              <CourseCard
+                key={course.id}
+                course={course}
+                onDrop={() => openConfirm(course)}
+              />
             ))}
           </div>
         )}
       </main>
 
-      {pendingDrop && mounted && createPortal(
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4" style={{ backgroundColor: "rgba(15, 23, 42, 0.4)", backdropFilter: "blur(4px)" }}>
-          <div className="w-full max-w-lg rounded-2xl p-8 flex flex-col relative" style={{ backgroundColor: "var(--color-surface-container-lowest)", boxShadow: "0px 10px 15px -3px rgba(15,23,42,0.1), 0px 4px 6px -2px rgba(15,23,42,0.05)" }}>
-            <button onClick={cancelDrop} disabled={dropping}
-              className="absolute top-4 right-4 p-2 rounded-full transition-colors disabled:opacity-40"
-              style={{ color: "var(--color-outline)" }}
-              onMouseEnter={(e) => { if (!dropping) (e.currentTarget as HTMLButtonElement).style.backgroundColor = "var(--color-surface-container-low)"; }}
-              onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = "transparent"; }}>
-              <span className="material-symbols-outlined text-[20px]">close</span>
-            </button>
-
-            <div className="flex items-center gap-4 mb-6">
-              <div className="w-12 h-12 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: "var(--color-error-container)" }}>
-                <span className="material-symbols-outlined text-[28px]" style={{ color: "var(--color-error)", fontVariationSettings: "'FILL' 1" }}>error</span>
-              </div>
-              <div>
-                <h2 className="text-xl font-semibold" style={{ color: "var(--color-on-surface)" }}>Confirm Drop Action</h2>
-                <p className="text-sm font-medium" style={{ color: "var(--color-error)" }}>Critical Action Required</p>
-              </div>
-            </div>
-
-            <div className="rounded-lg p-4 mb-4 border" style={{ backgroundColor: "var(--color-surface-container)", borderColor: "var(--color-error-container)" }}>
-              <p className="text-sm mb-1" style={{ color: "var(--color-on-surface)" }}>You are about to permanently drop the following course:</p>
-              <p className="text-lg font-bold" style={{ color: "var(--color-on-surface)" }}>{pendingDrop.name} ({pendingDrop.code})</p>
-            </div>
-
-            <p className="text-base mb-4" style={{ color: "var(--color-on-surface-variant)" }}>
-              Dropping this course will remove <strong style={{ color: "var(--color-on-surface)" }}>{pendingDrop.credits} credits</strong> from your current semester total. This action cannot be undone and may drop you below the full-time enrollment requirement.
-            </p>
-
-            {dropError && (
-              <div className="flex items-center gap-2 px-4 py-3 rounded-lg mb-4"
-                style={{ backgroundColor: "var(--color-error-container)", color: "var(--color-on-error-container)" }}>
-                <span className="material-symbols-outlined text-[18px]">error</span>
-                <p className="text-sm font-medium">{dropError}</p>
-              </div>
-            )}
-
-            <div className="flex justify-end gap-3 mt-4">
-              <button onClick={cancelDrop} disabled={dropping}
-                className="px-6 py-2.5 rounded-lg text-sm font-medium transition-colors disabled:opacity-40"
-                style={{ backgroundColor: "transparent", color: "var(--color-on-surface-variant)" }}
-                onMouseEnter={(e) => { if (!dropping) (e.currentTarget as HTMLButtonElement).style.backgroundColor = "var(--color-surface-container-high)"; }}
-                onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = "transparent"; }}>
-                Cancel — Keep Course
-              </button>
-              <button onClick={confirmDrop} disabled={dropping}
-                className="px-6 py-2.5 rounded-lg text-sm font-medium flex items-center gap-2 transition-opacity disabled:opacity-70"
-                style={{ backgroundColor: "var(--color-error)", color: "var(--color-on-error)" }}
-                onMouseEnter={(e) => { if (!dropping) (e.currentTarget as HTMLButtonElement).style.opacity = "0.85"; }}
-                onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.opacity = "1"; }}>
-                {dropping ? (
-                  <>
-                    <span className="material-symbols-outlined text-[18px] animate-spin">progress_activity</span>
-                    Dropping...
-                  </>
-                ) : (
-                  <>
-                    <span className="material-symbols-outlined text-[18px]">delete_forever</span>
-                    Yes, Drop Course
-                  </>
-                )}
-              </button>
+      {/* Confirmation Popup — fixed bottom-right, no overlay */}
+      {isModalOpen && modalCourse && (
+        <div className="fixed bottom-6 right-6 z-50 w-96 rounded-xl bg-white border-l-4 border-red-600 shadow-xl p-5">
+          <div className="flex items-start gap-3 mb-3">
+            <span className="text-red-600 text-2xl leading-none mt-0.5">⚠</span>
+            <div>
+              <p className="text-sm font-bold text-red-600 uppercase tracking-wide mb-0.5">
+                Warning — Irreversible Action
+              </p>
+              <p className="text-base font-semibold text-gray-900">
+                Drop {modalCourse.code}?
+              </p>
+              <p className="text-sm text-gray-500 mt-1">
+                <span className="font-medium text-gray-700">{modalCourse.name}</span> will
+                be permanently removed from your enrollment. This cannot be undone.
+              </p>
             </div>
           </div>
-        </div>,
-        document.body
+          {dropState.status === "error" && (
+            <p className="text-sm font-medium text-red-600 mb-3 pl-9">⚠ {dropState.message}</p>
+          )}
+          <div className="flex justify-end gap-2 pt-3 border-t border-gray-100">
+            <button
+              onClick={closeModal}
+              disabled={isDropping}
+              className="px-4 py-2 rounded-lg text-sm font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 disabled:opacity-40 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={confirmDrop}
+              disabled={isDropping}
+              className="px-4 py-2 rounded-lg text-sm font-semibold bg-red-600 text-white hover:bg-red-700 disabled:opacity-60 transition-colors"
+            >
+              {isDropping ? "Dropping…" : "Yes, Drop Course"}
+            </button>
+          </div>
+        </div>
       )}
     </>
+  );
+}
+
+function CourseCard({
+  course,
+  onDrop,
+}: {
+  course: Course;
+  onDrop: () => void;
+}) {
+  return (
+    <div
+      className="rounded-xl p-6 flex flex-col relative overflow-hidden group transition-shadow card-shadow"
+      style={{
+        backgroundColor: "var(--color-surface-container-lowest)",
+        borderTop: "4px solid var(--color-error)",
+      }}
+    >
+      {/* Hover tint */}
+      <div
+        className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"
+        style={{
+          background:
+            "linear-gradient(to bottom, color-mix(in srgb, var(--color-error-container) 10%, transparent), transparent)",
+        }}
+      />
+
+      {/* Card header */}
+      <div className="flex justify-between items-start mb-4 relative z-10">
+        <div>
+          <span
+            className="inline-flex items-center px-2 py-1 rounded-md text-xs font-semibold mb-2"
+            style={{
+              backgroundColor: "var(--color-surface-container)",
+              color: "var(--color-on-surface)",
+            }}
+          >
+            {course.code}
+          </span>
+          <h3
+            className="text-xl font-semibold leading-tight"
+            style={{ color: "var(--color-on-surface)" }}
+          >
+            {course.name}
+          </h3>
+        </div>
+        <div
+          className="w-10 h-10 rounded-full flex items-center justify-center shrink-0"
+          style={{ backgroundColor: "var(--color-error-container)" }}
+        >
+          <span
+            className="material-symbols-outlined"
+            style={{
+              color: "var(--color-error)",
+              fontVariationSettings: "'FILL' 1",
+            }}
+          >
+            warning
+          </span>
+        </div>
+      </div>
+
+      {/* Details */}
+      <div className="space-y-2 mb-6 relative z-10">
+        {[
+          { icon: "person", value: course.instructor },
+          { icon: "schedule", value: course.schedule },
+          { icon: "credit_score", value: `${course.credits} Credits` },
+          {
+            icon: "school",
+            value: `${course.department} · Year ${course.year} · ${course.semester}`,
+          },
+        ].map((row) => (
+          <p
+            key={row.icon}
+            className="flex items-center gap-1.5 text-sm"
+            style={{ color: "var(--color-on-surface-variant)" }}
+          >
+            <span className="material-symbols-outlined text-[18px]">{row.icon}</span>
+            {row.value}
+          </p>
+        ))}
+      </div>
+
+      {/* Drop button */}
+      <div
+        className="mt-auto pt-4 border-t relative z-10"
+        style={{ borderColor: "var(--color-surface-variant)" }}
+      >
+        <button
+          type="button"
+          onClick={onDrop}
+          className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border text-sm font-bold transition-all"
+          style={{
+            borderColor: "var(--color-error)",
+            color: "var(--color-error)",
+            backgroundColor: "transparent",
+          }}
+          onMouseEnter={(e) => {
+            (e.currentTarget as HTMLButtonElement).style.backgroundColor =
+              "var(--color-error)";
+            (e.currentTarget as HTMLButtonElement).style.color =
+              "var(--color-on-error)";
+          }}
+          onMouseLeave={(e) => {
+            (e.currentTarget as HTMLButtonElement).style.backgroundColor =
+              "transparent";
+            (e.currentTarget as HTMLButtonElement).style.color =
+              "var(--color-error)";
+          }}
+        >
+          <span className="material-symbols-outlined text-[20px]">delete</span>
+          Drop Course
+        </button>
+      </div>
+    </div>
   );
 }

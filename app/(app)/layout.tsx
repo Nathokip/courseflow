@@ -17,11 +17,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   }
 
   return (
-    <div className="flex min-h-screen" style={{ backgroundColor: "var(--color-background)" }}>
+    <div className="flex h-screen overflow-hidden" style={{ backgroundColor: "var(--color-background)" }}>
       <Sidebar />
       <div
-        className="flex-1 flex flex-col min-h-screen"
-        style={{ marginLeft: "var(--spacing-sidebar_width)" }}
+        className="flex-1 flex flex-col h-screen overflow-y-auto"
+        style={{ marginLeft: "var(--spacing-sidebar_width)", backgroundColor: "var(--color-background)" }}
       >
         {children}
       </div>
