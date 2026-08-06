@@ -3,9 +3,9 @@ import prisma from "@/lib/prisma";
 import { getAdminUser } from "@/lib/admin";
 
 type RouteContext = {
-  params: {
+  params: Promise<{
     announcementId: string;
-  };
+  }>;
 };
 
 function parseAnnouncementPayload(body: Record<string, unknown>) {
@@ -34,7 +34,7 @@ export async function PUT(request: Request, context: RouteContext) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { announcementId } = context.params;
+  const { announcementId } = await context.params;
   const existing = await prisma.announcement.findUnique({
     where: { id: announcementId },
   });
@@ -70,7 +70,7 @@ export async function DELETE(_request: Request, context: RouteContext) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { announcementId } = context.params;
+  const { announcementId } = await context.params;
   const existing = await prisma.announcement.findUnique({
     where: { id: announcementId },
   });

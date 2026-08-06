@@ -3,9 +3,9 @@ import prisma from "@/lib/prisma";
 import { getAdminUser } from "@/lib/admin";
 
 type RouteContext = {
-  params: {
+  params: Promise<{
     courseId: string;
-  };
+  }>;
 };
 
 function parseCoursePayload(body: Record<string, unknown>) {
@@ -67,7 +67,7 @@ export async function PUT(request: Request, context: RouteContext) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { courseId } = context.params;
+  const { courseId } = await context.params;
   const body = (await request.json().catch(() => null)) as Record<string, unknown> | null;
   if (!body) {
     return NextResponse.json({ error: "Invalid request body." }, { status: 400 });
@@ -149,7 +149,7 @@ export async function DELETE(_request: Request, context: RouteContext) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { courseId } = context.params;
+  const { courseId } = await context.params;
   const course = await prisma.course.findUnique({
     where: { id: courseId },
     include: {
